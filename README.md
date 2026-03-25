@@ -75,4 +75,3 @@ public/           # Static assets (icons, manifest)
 
 بيانات الخرائط والمسارات مقدَّمة من OpenStreetMap/OSRM وقد تكون غير مكتملة في بعض مناطق العراق.  
 Map and routing data from OpenStreetMap/OSRM may be incomplete in some areas of Iraq.
-تطبيق خرائط 

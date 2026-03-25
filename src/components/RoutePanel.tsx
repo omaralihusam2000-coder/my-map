@@ -23,6 +23,13 @@ function getManeuverIcon(step: RouteStep): string {
   return '⬆️';
 }
 
+function getStepName(step: RouteStep, index: number, totalSteps: number, lang: Language): string {
+  if (step.name) return step.name;
+  if (index === 0) return t('stepDepart', lang);
+  if (index === totalSteps - 1) return t('stepArrive', lang);
+  return `${t('stepN', lang)} ${index + 1}`;
+}
+
 function formatDist(meters: number, lang: Language): string {
   if (meters >= 1000) return `${(meters / 1000).toFixed(1)} ${t('km', lang)}`;
   return `${Math.round(meters)} ${lang === 'en' ? 'm' : 'م'}`;
@@ -204,7 +211,7 @@ export default function RoutePanel({ lang, from, to, routeInfo, onFromChange, on
               <li key={i} className="step-item">
                 <span className="step-icon">{getManeuverIcon(step)}</span>
                 <div className="step-info">
-                  <div className="step-name">{step.name || (i === 0 ? t('stepDepart', lang) : i === routeInfo.steps.length - 1 ? t('stepArrive', lang) : `${t('stepN', lang)} ${i + 1}`)}</div>
+                  <div className="step-name">{getStepName(step, i, routeInfo.steps.length, lang)}</div>
                   <div className="step-dist">{formatDist(step.distance, lang)}</div>
                 </div>
               </li>

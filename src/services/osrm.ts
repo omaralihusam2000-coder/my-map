@@ -2,6 +2,22 @@ import { RouteInfo, RouteStep } from '../types';
 
 const OSRM_URL = import.meta.env.VITE_OSRM_URL || 'https://router.project-osrm.org';
 
+interface OsrmLeg {
+  steps: Record<string, unknown>[];
+}
+
+interface OsrmRoute {
+  distance: number;
+  duration: number;
+  geometry: string;
+  legs: OsrmLeg[];
+}
+
+interface OsrmResponse {
+  code: string;
+  routes?: OsrmRoute[];
+}
+
 function decodePolyline(encoded: string): [number, number][] {
   const points: [number, number][] = [];
   let index = 0;
@@ -58,7 +74,7 @@ export async function getRoute(
   const res = await fetch(url);
   if (!res.ok) throw new Error('Routing failed');
   
-  const data = await res.json() as { code: string; routes?: Array<{ distance: number; duration: number; geometry: string; legs: Array<{ steps: Record<string, unknown>[] }> }> };
+  const data = await res.json() as OsrmResponse;
   if (data.code !== 'Ok' || !data.routes?.length) throw new Error('No route found');
   
   const route = data.routes[0];
