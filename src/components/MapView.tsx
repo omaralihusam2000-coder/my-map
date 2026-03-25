@@ -187,13 +187,30 @@ export default function MapView({ searchMarker, fromMarker, toMarker, routeInfo,
       const name = poi.name ?? (catCfg ? catCfg.labelAr : poi.category);
       const addr = poi.tags?.['addr:street'] ?? poi.tags?.['addr:full'] ?? '';
       const phone = poi.tags?.phone ?? poi.tags?.['contact:phone'] ?? '';
-      const popupHtml = [
-        `<strong>${name}</strong>`,
-        addr ? `<div>📍 ${addr}</div>` : '',
-        phone ? `<div>📞 ${phone}</div>` : '',
-        `<br><button onclick="window.__poiSetDest(${poi.lat},${poi.lng},'${name.replace(/'/g, "\\'")}')">تعيين كوجهة</button>`,
-      ].join('');
-      marker.bindPopup(popupHtml);
+
+      // Build popup using DOM to avoid XSS
+      const container = document.createElement('div');
+      const title = document.createElement('strong');
+      title.textContent = name;
+      container.appendChild(title);
+      if (addr) {
+        const addrDiv = document.createElement('div');
+        addrDiv.textContent = `📍 ${addr}`;
+        container.appendChild(addrDiv);
+      }
+      if (phone) {
+        const phoneDiv = document.createElement('div');
+        phoneDiv.textContent = `📞 ${phone}`;
+        container.appendChild(phoneDiv);
+      }
+      const btn = document.createElement('button');
+      btn.textContent = 'تعيين كوجهة';
+      btn.style.marginTop = '6px';
+      btn.addEventListener('click', () => { onPoiSetDestRef.current(poi.lat, poi.lng, name); });
+      container.appendChild(document.createElement('br'));
+      container.appendChild(btn);
+
+      marker.bindPopup(container);
       clusterGroup.addLayer(marker);
     }
   }, [pois]);
@@ -224,16 +241,6 @@ export default function MapView({ searchMarker, fromMarker, toMarker, routeInfo,
       }
     }
   }, [navPosition, autoFollow]);
-
-  // Expose poi destination setter globally for popup button
-  useEffect(() => {
-    (window as unknown as Record<string, unknown>).__poiSetDest = (lat: number, lng: number, name: string) => {
-      onPoiSetDestRef.current(lat, lng, name);
-    };
-    return () => {
-      delete (window as unknown as Record<string, unknown>).__poiSetDest;
-    };
-  }, []);
 
   return <div ref={containerRef} className="map-container" />;
 }

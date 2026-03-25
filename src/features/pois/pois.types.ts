@@ -1,4 +1,5 @@
 import { PoiCategory } from '../../services/overpass';
+import { MapBounds } from '../../types';
 
 export interface PoiItem {
   id: string;
@@ -9,10 +10,4 @@ export interface PoiItem {
   tags?: Record<string, string>;
 }
 
-export interface MapBounds {
-  south: number;
-  west: number;
-  north: number;
-  east: number;
-  zoom: number;
-}
+export type { MapBounds };

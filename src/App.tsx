@@ -135,7 +135,9 @@ function App() {
       const info = await getRoute(navPosition.lat, navPosition.lng, toMarker.lat, toMarker.lng);
       setRouteInfo(info);
       setFromMarker({ lat: navPosition.lat, lng: navPosition.lng, label: t('locateMe', lang) });
-    } catch { /* ignore */ }
+    } catch {
+      showToast(t('error', lang));
+    }
   }, [navPosition, toMarker, lang]);
 
   // Cleanup watch on unmount
