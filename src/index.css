@@ -476,3 +476,119 @@ html[lang="en"] body,
   transition: background 0.2s;
 }
 .fab-locate:hover { background: var(--border); }
+
+/* ── POI Filter Panel ── */
+.poi-status {
+  min-height: 24px;
+  margin-bottom: 8px;
+  text-align: center;
+  font-size: 13px;
+}
+.poi-loading { color: var(--text-secondary); }
+.poi-error   { color: #e53935; }
+.poi-count   { color: var(--primary); font-weight: 600; }
+
+.poi-filter-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  justify-content: center;
+}
+
+.poi-filter-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.15s, border-color 0.15s;
+  min-width: 70px;
+}
+.poi-filter-btn:hover { background: var(--border); }
+.poi-filter-btn.active { font-weight: 600; }
+.poi-filter-icon { font-size: 20px; }
+.poi-filter-label { font-size: 11px; }
+
+/* POI map icon */
+.poi-div-icon { background: transparent; border: none; }
+
+/* ── Navigation Panel ── */
+.nav-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1500;
+  background: var(--bg-panel);
+  border-bottom: 2px solid var(--primary);
+  padding: 8px 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.nav-warning {
+  background: #fff3e0;
+  color: #e65100;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.nav-instruction {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.nav-icon { font-size: 32px; flex-shrink: 0; }
+.nav-text { flex: 1; }
+.nav-step-name { font-size: 16px; font-weight: 700; color: var(--text); }
+.nav-dist { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+
+.nav-reroute {
+  width: 100%;
+  margin-bottom: 8px;
+  background: #ff9800;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.nav-reroute:hover { background: #f57c00; }
+
+.nav-controls {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.nav-ctrl-btn {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.nav-ctrl-btn:hover { background: var(--border); }
+.nav-ctrl-btn.nav-stop {
+  background: #e53935;
+  color: white;
+  border-color: #e53935;
+  font-size: 14px;
+  font-weight: 700;
+}
+.nav-ctrl-btn.nav-stop:hover { background: #b71c1c; }
+
+.nav-div-icon { background: transparent; border: none; }

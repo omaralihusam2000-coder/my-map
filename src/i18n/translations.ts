@@ -44,7 +44,11 @@ export type TranslationKey =
   | 'routeDisclaimer'
   | 'stepDepart'
   | 'stepArrive'
-  | 'stepN';
+  | 'stepN'
+  | 'pois'
+  | 'startNavigation'
+  | 'stopNavigation'
+  | 'poiPlaces';
 
 export const translations: Record<string, Record<TranslationKey, string>> = {
   ar: {
@@ -94,6 +98,10 @@ export const translations: Record<string, Record<TranslationKey, string>> = {
     stepDepart: '🚦 انطلق',
     stepArrive: '🏁 وصلت',
     stepN: 'خطوة',
+    pois: 'أماكن',
+    startNavigation: 'ابدأ الملاحة',
+    stopNavigation: 'إيقاف الملاحة',
+    poiPlaces: 'الأماكن',
   },
   en: {
     appName: 'Iraq Map',
@@ -142,6 +150,10 @@ export const translations: Record<string, Record<TranslationKey, string>> = {
     stepDepart: '🚦 Depart',
     stepArrive: '🏁 Arrive',
     stepN: 'Step',
+    pois: 'Places',
+    startNavigation: 'Start Navigation',
+    stopNavigation: 'Stop Navigation',
+    poiPlaces: 'POI Places',
   },
   ku: {
     appName: 'نەخشەی عێراق',
@@ -190,5 +202,9 @@ export const translations: Record<string, Record<TranslationKey, string>> = {
     stepDepart: '🚦 دەستپێبکە',
     stepArrive: '🏁 گەیشتیت',
     stepN: 'هەنگاو',
+    pois: 'شوێنەکان',
+    startNavigation: 'دەستپێکردنی ناوبەری',
+    stopNavigation: 'ڕاگرتنی ناوبەری',
+    poiPlaces: 'شوێنەکان',
   },
 };

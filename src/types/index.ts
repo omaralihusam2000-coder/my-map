@@ -50,4 +50,12 @@ export interface HistoryItem {
 export type Language = 'ar' | 'en' | 'ku';
 export type Theme = 'light' | 'dark';
 
-export type PanelTab = 'search' | 'route' | 'favorites' | 'history';
+export type PanelTab = 'search' | 'route' | 'favorites' | 'history' | 'pois';
+
+export interface MapBounds {
+  south: number;
+  west: number;
+  north: number;
+  east: number;
+  zoom: number;
+}

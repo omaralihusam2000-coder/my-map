@@ -7,6 +7,7 @@ const TABS: { id: PanelTab; icon: string; labelKey: TranslationKey }[] = [
   { id: 'route', icon: '🗺️', labelKey: 'route' },
   { id: 'favorites', icon: '⭐', labelKey: 'favorites' },
   { id: 'history', icon: '🕐', labelKey: 'history' },
+  { id: 'pois', icon: '📍', labelKey: 'pois' },
 ];
 
 interface BottomSheetProps {
