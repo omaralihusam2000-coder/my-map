@@ -17,6 +17,10 @@ L.Icon.Default.mergeOptions({
 
 const BAGHDAD = { lat: 33.3152, lng: 44.3661 };
 
+// Cluster at most 60 px radius so nearby Baghdad POIs still group together,
+// but zoom ≥ 17 (street level) shows individual markers for precise tapping.
+const CLUSTER_RADIUS_PX     = 60;
+const CLUSTER_DISABLE_ZOOM  = 17;
 interface MapViewProps {
   searchMarker: Location | null;
   fromMarker: Location | null;
@@ -70,7 +74,7 @@ export default function MapView({ searchMarker, fromMarker, toMarker, routeInfo,
     mapRef.current = map;
 
     // Initialize cluster group
-    const clusterGroup = L.markerClusterGroup({ maxClusterRadius: 60, disableClusteringAtZoom: 17 });
+    const clusterGroup = L.markerClusterGroup({ maxClusterRadius: CLUSTER_RADIUS_PX, disableClusteringAtZoom: CLUSTER_DISABLE_ZOOM });
     map.addLayer(clusterGroup);
     clusterGroupRef.current = clusterGroup;
 

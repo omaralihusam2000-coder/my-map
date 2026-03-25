@@ -29,9 +29,15 @@ export interface OverpassElement {
 }
 
 const memCache = new Map<string, { data: OverpassElement[]; ts: number }>();
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Overpass query limits – keep conservative to avoid rate-limiting the public API
+const QUERY_TIMEOUT_S = 25;        // seconds before Overpass aborts the query
+const QUERY_MAX_SIZE  = 16777216;  // 16 MB max response size
+const QUERY_MAX_NODES = 2000;      // max elements returned (protects against dense areas)
 
 function cacheKey(south: number, west: number, north: number, east: number, cats: PoiCategory[]): string {
+  // Round to 2 decimal places (~1 km) for coarse cache bucketing
   const r = (n: number) => Math.round(n * 100) / 100;
   return `${r(south)},${r(west)},${r(north)},${r(east)},${[...cats].sort().join(',')}`;
 }
@@ -41,7 +47,7 @@ function buildQuery(south: number, west: number, north: number, east: number, ca
   const union = cats.map(cat => `
   node[amenity=${cat}](${bbox});
   way[amenity=${cat}](${bbox});`).join('');
-  return `[out:json][timeout:25][maxsize:16777216];\n(\n${union}\n);\nout center 2000;`;
+  return `[out:json][timeout:${QUERY_TIMEOUT_S}][maxsize:${QUERY_MAX_SIZE}];\n(\n${union}\n);\nout center ${QUERY_MAX_NODES};`;
 }
 
 export async function fetchPois(

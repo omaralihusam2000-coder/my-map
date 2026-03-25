@@ -52,7 +52,7 @@ export function usePois(bounds: MapBounds | null, enabledCategories: PoiCategory
       }
       setPois(items);
     } catch {
-      setError('error');
+      setError('poiError');
     } finally {
       setLoading(false);
     }

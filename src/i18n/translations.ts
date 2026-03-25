@@ -48,7 +48,10 @@ export type TranslationKey =
   | 'pois'
   | 'startNavigation'
   | 'stopNavigation'
-  | 'poiPlaces';
+  | 'poiPlaces'
+  | 'poiLoading'
+  | 'poiError'
+  | 'poiDisclaimer';
 
 export const translations: Record<string, Record<TranslationKey, string>> = {
   ar: {
@@ -102,6 +105,9 @@ export const translations: Record<string, Record<TranslationKey, string>> = {
     startNavigation: 'ابدأ الملاحة',
     stopNavigation: 'إيقاف الملاحة',
     poiPlaces: 'الأماكن',
+    poiLoading: 'جاري تحميل الأماكن…',
+    poiError: 'تعذر تحميل الأماكن، حاول لاحقاً',
+    poiDisclaimer: 'بيانات الأماكن من OpenStreetMap وقد لا تكون مكتملة في بعض مناطق العراق.',
   },
   en: {
     appName: 'Iraq Map',
@@ -154,6 +160,9 @@ export const translations: Record<string, Record<TranslationKey, string>> = {
     startNavigation: 'Start Navigation',
     stopNavigation: 'Stop Navigation',
     poiPlaces: 'POI Places',
+    poiLoading: 'Loading places…',
+    poiError: 'Could not load places, please try again later',
+    poiDisclaimer: 'Place data from OpenStreetMap. Coverage may be incomplete in some areas of Iraq.',
   },
   ku: {
     appName: 'نەخشەی عێراق',
@@ -206,5 +215,8 @@ export const translations: Record<string, Record<TranslationKey, string>> = {
     startNavigation: 'دەستپێکردنی ناوبەری',
     stopNavigation: 'ڕاگرتنی ناوبەری',
     poiPlaces: 'شوێنەکان',
+    poiLoading: 'شوێنەکان بارکراون…',
+    poiError: 'ناتوانرێت شوێنەکان بارکرێن، دواتر هەوڵبدەرەوە',
+    poiDisclaimer: 'داتای شوێنەکان لە OpenStreetMap. پووشپەڕی ناچێت تەواو بێت.',
   },
 };

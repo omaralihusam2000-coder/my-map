@@ -1,5 +1,6 @@
 import { PoiCategory, POI_CATEGORIES } from '../../services/overpass';
 import { Language } from '../../types';
+import { t } from '../../i18n';
 
 interface PoiFiltersProps {
   lang: Language;
@@ -25,8 +26,8 @@ export default function PoiFilters({ lang, enabled, onChange, loading, error, co
   return (
     <div>
       <div className="poi-status">
-        {loading && <span className="poi-loading">جاري تحميل الأماكن…</span>}
-        {error && !loading && <span className="poi-error">تعذر تحميل الأماكن، حاول لاحقاً</span>}
+        {loading && <span className="poi-loading">{t('poiLoading', lang)}</span>}
+        {error && !loading && <span className="poi-error">{t('poiError', lang)}</span>}
         {!loading && !error && count > 0 && (
           <span className="poi-count">
             {lang === 'ar' ? `${count} مكان` : lang === 'ku' ? `${count} شوێن` : `${count} places`}
@@ -47,13 +48,7 @@ export default function PoiFilters({ lang, enabled, onChange, loading, error, co
           </button>
         ))}
       </div>
-      <div className="disclaimer">
-        {lang === 'ar'
-          ? 'بيانات الأماكن من OpenStreetMap وقد لا تكون مكتملة في بعض مناطق العراق.'
-          : lang === 'ku'
-          ? 'داتای شوێنەکان لە OpenStreetMap و ناچێت تەواو بێت.'
-          : 'Place data from OpenStreetMap. Coverage may be incomplete in some areas of Iraq.'}
-      </div>
+      <div className="disclaimer">{t('poiDisclaimer', lang)}</div>
     </div>
   );
 }

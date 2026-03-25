@@ -8,9 +8,12 @@ export interface GuidanceState {
   totalConsumedDistance: number;
 }
 
-const ANNOUNCE_FAR = 120;
-const ANNOUNCE_NEAR = 35;
-const REROUTE_DIST = 50;
+// Distance thresholds for turn announcements.
+// 120 m gives enough time for the driver to prepare; 35 m is the final "turn now" prompt.
+const ANNOUNCE_FAR_METERS  = 120;
+const ANNOUNCE_NEAR_METERS = 35;
+// Off-route threshold: if user is more than 50 m from the route polyline, suggest rerouting.
+const REROUTE_DIST_METERS  = 50;
 
 function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371000;
@@ -99,7 +102,7 @@ export function useNavigationGuidance({
   useEffect(() => {
     if (!active || userLat === null || userLng === null || !steps.length || !geometry.length) return;
     const { dist, consumed } = distToPolyline(userLat, userLng, geometry);
-    const offRoute = dist > REROUTE_DIST;
+    const offRoute = dist > REROUTE_DIST_METERS;
 
     let stepIdx = 0;
     for (let i = 0; i < cumDist.current.length; i++) {
@@ -116,11 +119,11 @@ export function useNavigationGuidance({
       lastStep.current = stepIdx;
     }
 
-    if (distToNext <= ANNOUNCE_FAR && !announcedFar.current) {
+    if (distToNext <= ANNOUNCE_FAR_METERS && !announcedFar.current) {
       speak(buildInstructionCb(steps[stepIdx], distToNext), 15000);
       announcedFar.current = true;
     }
-    if (distToNext <= ANNOUNCE_NEAR && !announcedNear.current) {
+    if (distToNext <= ANNOUNCE_NEAR_METERS && !announcedNear.current) {
       speak(buildInstructionCb(steps[stepIdx], distToNext), 5000);
       announcedNear.current = true;
     }
