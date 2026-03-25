@@ -43,9 +43,10 @@ interface RoutePanelProps {
   onFromChange: (loc: Location | null) => void;
   onToChange: (loc: Location | null) => void;
   onRouteChange: (info: RouteInfo | null) => void;
+  onStartNavigation?: () => void;
 }
 
-export default function RoutePanel({ lang, from, to, routeInfo, onFromChange, onToChange, onRouteChange }: RoutePanelProps) {
+export default function RoutePanel({ lang, from, to, routeInfo, onFromChange, onToChange, onRouteChange, onStartNavigation }: RoutePanelProps) {
   const [fromQuery, setFromQuery] = useState(from?.label ?? '');
   const [toQuery, setToQuery] = useState(to?.label ?? '');
   const [fromResults, setFromResults] = useState<SearchResult[]>([]);
@@ -175,6 +176,12 @@ export default function RoutePanel({ lang, from, to, routeInfo, onFromChange, on
               <div className="route-info-label">{t('min', lang)}</div>
             </div>
           </div>
+
+          {onStartNavigation && (
+            <button className="btn btn-primary" onClick={onStartNavigation} style={{ marginBottom: 12 }}>
+              🧭 {t('startNavigation', lang)}
+            </button>
+          )}
 
           <div className="fare-inputs">
             <div className="fare-input-group">

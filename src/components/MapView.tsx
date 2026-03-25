@@ -1,7 +1,12 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+import 'leaflet.markercluster';
 import { Location, RouteInfo } from '../types';
+import { PoiItem } from '../features/pois/pois.types';
+import { POI_CATEGORIES } from '../services/overpass';
 
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -12,6 +17,10 @@ L.Icon.Default.mergeOptions({
 
 const BAGHDAD = { lat: 33.3152, lng: 44.3661 };
 
+// Cluster at most 60 px radius so nearby Baghdad POIs still group together,
+// but zoom ≥ 17 (street level) shows individual markers for precise tapping.
+const CLUSTER_RADIUS_PX     = 60;
+const CLUSTER_DISABLE_ZOOM  = 17;
 interface MapViewProps {
   searchMarker: Location | null;
   fromMarker: Location | null;
@@ -19,16 +28,27 @@ interface MapViewProps {
   routeInfo: RouteInfo | null;
   theme: 'light' | 'dark';
   onMapClick?: (lat: number, lng: number) => void;
+  pois: PoiItem[];
+  navPosition: { lat: number; lng: number } | null;
+  autoFollow: boolean;
+  onBoundsChange: (south: number, west: number, north: number, east: number, zoom: number) => void;
+  onPoiSetDestination: (lat: number, lng: number, name: string) => void;
 }
 
-export default function MapView({ searchMarker, fromMarker, toMarker, routeInfo, theme, onMapClick }: MapViewProps) {
+export default function MapView({ searchMarker, fromMarker, toMarker, routeInfo, theme, onMapClick, pois, navPosition, autoFollow, onBoundsChange, onPoiSetDestination }: MapViewProps) {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const routeLayerRef = useRef<L.Polyline | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const onMapClickRef = useRef(onMapClick);
+  const clusterGroupRef = useRef<L.MarkerClusterGroup | null>(null);
+  const navMarkerRef = useRef<L.Marker | null>(null);
+  const onBoundsChangeRef = useRef(onBoundsChange);
+  const onPoiSetDestRef = useRef(onPoiSetDestination);
   onMapClickRef.current = onMapClick;
+  onBoundsChangeRef.current = onBoundsChange;
+  onPoiSetDestRef.current = onPoiSetDestination;
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -53,13 +73,28 @@ export default function MapView({ searchMarker, fromMarker, toMarker, routeInfo,
     tileLayerRef.current = tile;
     mapRef.current = map;
 
+    // Initialize cluster group
+    const clusterGroup = L.markerClusterGroup({ maxClusterRadius: CLUSTER_RADIUS_PX, disableClusteringAtZoom: CLUSTER_DISABLE_ZOOM });
+    map.addLayer(clusterGroup);
+    clusterGroupRef.current = clusterGroup;
+
+    const emitBounds = () => {
+      const b = map.getBounds();
+      onBoundsChangeRef.current(b.getSouth(), b.getWest(), b.getNorth(), b.getEast(), map.getZoom());
+    };
+
     map.on('click', (e: L.LeafletMouseEvent) => {
       onMapClickRef.current?.(e.latlng.lat, e.latlng.lng);
     });
 
+    map.on('moveend', emitBounds);
+    map.on('zoomend', emitBounds);
+    emitBounds();
+
     return () => {
       map.remove();
       mapRef.current = null;
+      clusterGroupRef.current = null;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -137,6 +172,79 @@ export default function MapView({ searchMarker, fromMarker, toMarker, routeInfo,
       map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
     }
   }, [routeInfo]);
+
+  // POI cluster layer
+  useEffect(() => {
+    const map = mapRef.current;
+    const clusterGroup = clusterGroupRef.current;
+    if (!map || !clusterGroup) return;
+    clusterGroup.clearLayers();
+    for (const poi of pois) {
+      const catCfg = POI_CATEGORIES.find(c => c.id === poi.category);
+      const icon = L.divIcon({
+        html: `<span style="font-size:18px;line-height:1">${catCfg?.icon ?? '📍'}</span>`,
+        className: 'poi-div-icon',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+      });
+      const marker = L.marker([poi.lat, poi.lng], { icon });
+      const name = poi.name ?? (catCfg ? catCfg.labelAr : poi.category);
+      const addr = poi.tags?.['addr:street'] ?? poi.tags?.['addr:full'] ?? '';
+      const phone = poi.tags?.phone ?? poi.tags?.['contact:phone'] ?? '';
+
+      // Build popup using DOM to avoid XSS
+      const container = document.createElement('div');
+      const title = document.createElement('strong');
+      title.textContent = name;
+      container.appendChild(title);
+      if (addr) {
+        const addrDiv = document.createElement('div');
+        addrDiv.textContent = `📍 ${addr}`;
+        container.appendChild(addrDiv);
+      }
+      if (phone) {
+        const phoneDiv = document.createElement('div');
+        phoneDiv.textContent = `📞 ${phone}`;
+        container.appendChild(phoneDiv);
+      }
+      const btn = document.createElement('button');
+      btn.textContent = 'تعيين كوجهة';
+      btn.style.marginTop = '6px';
+      btn.addEventListener('click', () => { onPoiSetDestRef.current(poi.lat, poi.lng, name); });
+      container.appendChild(document.createElement('br'));
+      container.appendChild(btn);
+
+      marker.bindPopup(container);
+      clusterGroup.addLayer(marker);
+    }
+  }, [pois]);
+
+  // Navigation position marker
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (navPosition) {
+      const navIcon = L.divIcon({
+        html: '<span style="font-size:24px;line-height:1">🧭</span>',
+        className: 'nav-div-icon',
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+      });
+      if (!navMarkerRef.current) {
+        navMarkerRef.current = L.marker([navPosition.lat, navPosition.lng], { icon: navIcon, zIndexOffset: 1000 }).addTo(map);
+      } else {
+        navMarkerRef.current.setLatLng([navPosition.lat, navPosition.lng]);
+      }
+      if (autoFollow) {
+        map.panTo([navPosition.lat, navPosition.lng]);
+      }
+    } else {
+      if (navMarkerRef.current) {
+        map.removeLayer(navMarkerRef.current);
+        navMarkerRef.current = null;
+      }
+    }
+  }, [navPosition, autoFollow]);
 
   return <div ref={containerRef} className="map-container" />;
 }

@@ -5,11 +5,18 @@ import SearchPanel from './components/SearchPanel';
 import RoutePanel from './components/RoutePanel';
 import FavoritesPanel from './components/FavoritesPanel';
 import HistoryPanel from './components/HistoryPanel';
+import PoiFilters from './features/pois/PoiFilters';
+import NavigationPanel from './features/navigation/NavigationPanel';
 import { useDarkMode } from './hooks/useDarkMode';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useGeolocation } from './hooks/useGeolocation';
+import { usePois } from './features/pois/usePois';
+import { useVoice } from './features/navigation/useVoice';
+import { useNavigationGuidance } from './features/navigation/useNavigationGuidance';
 import { t } from './i18n';
-import { Location, RouteInfo, Favorite, HistoryItem, Language, PanelTab } from './types';
+import { Location, RouteInfo, Favorite, HistoryItem, Language, PanelTab, MapBounds } from './types';
+import { PoiCategory, POI_CATEGORIES } from './services/overpass';
+import { getRoute } from './services/osrm';
 
 function App() {
   const [theme, toggleTheme] = useDarkMode();
@@ -23,8 +30,28 @@ function App() {
   const [history, setHistory] = useLocalStorage<HistoryItem[]>('history', []);
   const [toast, setToast] = useState('');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [mapBounds, setMapBounds] = useState<MapBounds | null>(null);
+  const [enabledCategories, setEnabledCategories] = useLocalStorage<PoiCategory[]>(
+    'poi_cats',
+    POI_CATEGORIES.map(c => c.id)
+  );
+  const [navMode, setNavMode] = useState(false);
+  const [navPosition, setNavPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [autoFollow, setAutoFollow] = useState(true);
+  const watchIdRef = useRef<number | null>(null);
   const langRef = useRef(lang);
   const geo = useGeolocation();
+
+  const { pois, loading: poisLoading, error: poisError } = usePois(mapBounds, enabledCategories);
+  const { speak, muted, toggleMute, noArabicVoice, cancelSpeech } = useVoice();
+  const guidance = useNavigationGuidance({
+    steps: routeInfo?.steps ?? [],
+    geometry: routeInfo?.geometry ?? [],
+    userLat: navPosition?.lat ?? null,
+    userLng: navPosition?.lng ?? null,
+    active: navMode,
+    speak,
+  });
 
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -68,6 +95,57 @@ function App() {
   const handleLocate = useCallback(() => {
     geo.locate();
   }, [geo]);
+
+  const handleBoundsChange = useCallback((south: number, west: number, north: number, east: number, zoom: number) => {
+    setMapBounds({ south, west, north, east, zoom });
+  }, []);
+
+  const handlePoiSetDestination = useCallback((lat: number, lng: number, name: string) => {
+    setToMarker({ lat, lng, label: name });
+    setActiveTab('route');
+  }, []);
+
+  const handleStartNavigation = useCallback(() => {
+    if (!routeInfo) return;
+    setNavMode(true);
+    setAutoFollow(true);
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+    }
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      pos => setNavPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => { /* ignore errors */ },
+      { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+    );
+  }, [routeInfo]);
+
+  const handleStopNavigation = useCallback(() => {
+    setNavMode(false);
+    setNavPosition(null);
+    cancelSpeech();
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+  }, [cancelSpeech]);
+
+  const handleReroute = useCallback(async () => {
+    if (!navPosition || !toMarker) return;
+    try {
+      const info = await getRoute(navPosition.lat, navPosition.lng, toMarker.lat, toMarker.lng);
+      setRouteInfo(info);
+      setFromMarker({ lat: navPosition.lat, lng: navPosition.lng, label: t('locateMe', lang) });
+    } catch {
+      showToast(t('error', lang));
+    }
+  }, [navPosition, toMarker, lang]);
+
+  // Cleanup watch on unmount
+  useEffect(() => {
+    return () => {
+      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (geo.lat && geo.lng) {
@@ -150,11 +228,31 @@ function App() {
         routeInfo={routeInfo}
         theme={theme}
         onMapClick={() => { /* reserved for future map-click to set from/to */ }}
+        pois={pois}
+        navPosition={navPosition}
+        autoFollow={autoFollow}
+        onBoundsChange={handleBoundsChange}
+        onPoiSetDestination={handlePoiSetDestination}
       />
 
       <button className="fab-locate" onClick={handleLocate} title={t('locateMe', lang)}>
         {geo.loading ? '⏳' : '📍'}
       </button>
+
+      {navMode && (
+        <NavigationPanel
+          lang={lang}
+          steps={routeInfo?.steps ?? []}
+          guidance={guidance}
+          muted={muted}
+          noArabicVoice={noArabicVoice}
+          autoFollow={autoFollow}
+          onToggleMute={toggleMute}
+          onToggleAutoFollow={() => setAutoFollow(f => !f)}
+          onStopNavigation={handleStopNavigation}
+          onReroute={handleReroute}
+        />
+      )}
 
       <BottomSheet lang={lang} activeTab={activeTab} onTabChange={setActiveTab}>
         {activeTab === 'search' && (
@@ -178,6 +276,7 @@ function App() {
             onFromChange={setFromMarker}
             onToChange={setToMarker}
             onRouteChange={setRouteInfo}
+            onStartNavigation={routeInfo ? handleStartNavigation : undefined}
           />
         )}
         {activeTab === 'favorites' && (
@@ -198,6 +297,16 @@ function App() {
             onClear={clearHistory}
             onSetFrom={loc => { setFromMarker(loc); setActiveTab('route'); }}
             onSetTo={loc => { setToMarker(loc); setActiveTab('route'); }}
+          />
+        )}
+        {activeTab === 'pois' && (
+          <PoiFilters
+            lang={lang}
+            enabled={enabledCategories}
+            onChange={setEnabledCategories}
+            loading={poisLoading}
+            error={poisError}
+            count={pois.length}
           />
         )}
         <div className="disclaimer">{t('disclaimer', lang)}</div>
